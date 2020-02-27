@@ -1,8 +1,10 @@
 This is my original 'multitest' perl script, FIO wrapper. It's quite long in the tooth, but I'm keeping it around because it provides consistent comparisons with other runs.
 
+This was originally written long ago as a way for people who don't understand FIO output or really know how to configure it to be able to run a script and compare storage performance on various systems. It was easier to just give this to customers and let them run it, than to work through how to parse FIO output.
+
 Multiiotester runs six simple FIO tests, invalidating cache and using directio. It runs parallel jobs in order to stress the storage, which is particularly important with low latency storage types that might not get pushed to their fullest if they're sitting idle waiting to serve requests most of the time.
 
-<pre>
+```
 Multiple IO Tester
 
   This application emulates a busy server in several states by launching multiple
@@ -45,4 +47,4 @@ The test should take less than 2 minutes. Press <ENTER> to begin...
  running IO "rand read/rand write" test...
 	result is 40.62MB/40.66MB per second
 	equals 10399.5/10407.8 IOs per second
-</pre>
+```
