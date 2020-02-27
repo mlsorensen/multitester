@@ -1,0 +1,48 @@
+This is my original 'multitest' perl script, FIO wrapper. It's quite long in the tooth, but I'm keeping it around because it provides consistent comparisons with other runs.
+
+Multiiotester runs six simple FIO tests, invalidating cache and using directio. It runs parallel jobs in order to stress the storage, which is particularly important with low latency storage types that might not get pushed to their fullest if they're sitting idle waiting to serve requests most of the time.
+
+<pre>
+Multiple IO Tester
+
+  This application emulates a busy server in several states by launching multiple
+threads that do various types of IO. This allows us to see what the consequences
+are of running in a multitasking environment. This test uses direct IO and
+invalidates caches between tests, testing the disk, not the memory.
+
+NOTE: You need at least 3GB of free space in your current working directory.
+
+The following tests currently consist of:
+
+  4 sequential readers
+  4 sequential writers
+  4 mixed seqential readers/writers (random choice per IO)
+  4 random readers
+  4 random writers
+  4 mixed random readers/writers (random choice per IO)
+
+Feel free to modify the script to meet your needs. Enjoy!
+
+The test should take less than 2 minutes. Press <ENTER> to begin...
+
+ running IO "sequential read" test...
+	result is 1.86GB per second
+
+ running IO "sequential write" test...
+	result is 1.56GB per second
+
+ running IO "seq read/seq write" test...
+	result is 837.54MB/871.63MB per second
+
+ running IO "random read" test...
+	result is 74.43MB per second
+	equals 19055.2 IOs per second
+
+ running IO "random write" test...
+	result is 88.42MB per second
+	equals 22636.0 IOs per second
+
+ running IO "rand read/rand write" test...
+	result is 40.62MB/40.66MB per second
+	equals 10399.5/10407.8 IOs per second
+</pre>

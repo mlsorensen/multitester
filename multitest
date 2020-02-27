@@ -1,0 +1,159 @@
+#!/usr/bin/perl
+use strict;
+
+$| = 1;
+my $colors = { red => "\e[1;31m", def => "\e[0m", green => "\e[1;32m", cyan => "\e[1;36m" };
+
+unless ( `which fio 2>/dev/null`) {
+  print "No executable 'fio' found in path, exiting\n";
+  exit;
+}
+
+my $version = 'v3';
+my $testversion = `fio --version | cut -d " " -f 2 | cut -d "-" -f 2`;
+
+if ($testversion < 1.5) {
+	$version = "v1";
+} elsif ($testversion < 3) {
+	$version = "v2";
+}
+$version = 'v1' if `fio --version | cut -d " " -f 2 | cut -d"-" -f 2` < 1.5;
+
+print <<EOF;
+$colors->{red}
+Multiple IO Tester$colors->{def}
+
+  This application emulates a busy server in several states by launching multiple
+threads that do various types of IO. This allows us to see what the consequences
+are of running in a multitasking environment. This test uses direct IO and 
+invalidates caches between tests, testing the disk, not the memory.
+
+$colors->{red}NOTE:$colors->{def} You need at least 3GB of free space in your current working directory.
+
+The following tests currently consist of:
+
+  4 sequential readers
+  4 sequential writers
+  4 mixed seqential readers/writers (random choice per IO)
+  4 random readers
+  4 random writers
+  4 mixed random readers/writers (random choice per IO)
+
+Feel free to modify the script to meet your needs. Enjoy!
+
+The test should take less than 2 minutes. Press <ENTER> to begin...
+EOF
+<STDIN>;
+
+die "please delete test directory from current directory first (multiiotester)\n" if -d "./multiiotester";
+
+my $tests = { 'read'      => { 'order' => 1, 
+			       'block' => '1024k', 
+			       'v3' => '7',
+                               'v2' => '6', 
+                               'v1' => '5', 
+                               'name' => 'sequential read' }, 
+              'write'     => { 'order' => 2, 
+                               'block' => '1024k', 
+			       'v3' => '48',
+                               'v2' => '26', 
+                               'v1' => '21', 
+                               'name' => 'sequential write' }, 
+              'rw'        => { 'order' => 3, 
+                               'block' => '1024k', 
+			       'v3' => '7,48',
+                               'v2' => '6,26', 
+                               'v1' => '5,21', 
+                               'name' => 'seq read/seq write' }, 
+              'randread'  => { 'order' => 4, 
+                               'block' => '4k', 
+			       'v3' => '7',
+                               'v2' => '6', 
+                               'v1' => '5',
+                               'name' => 'random read' }, 
+              'randwrite' => { 'order' => 5, 
+                               'block' => '4k', 
+			       'v3' => '48',
+                               'v2' => '26', 
+                               'v1' => '21',
+                               'name' => 'random write' } , 
+              'randrw'    => { 'order' => 6, 
+                               'block' => '4k', 
+			       'v3' => '7,48',
+                               'v2' => '6,26', 
+                               'v1' => '5,21',
+                               'name' => 'rand read/rand write' } 
+            };
+
+mkdir('./multiiotester') or die "unable to create test directory: $^E";
+chdir('./multiiotester') or die "unable to chdir to test directory: $^E";
+
+
+foreach my $t ( sort{$tests->{$a}->{order} cmp $tests->{$b}->{order}} keys %{$tests} ) {
+  print "$colors->{cyan} running IO \"$tests->{$t}->{name}\" test... $colors->{def}\n";
+
+  my $output = `fio --direct=1 --invalidate=1 --iodepth=8 --thread --time_based --runtime=10 --rw=$t --bs=$tests->{$t}->{block} --size=256M --numjobs=8 --name=multiiotester --minimal | egrep "^2;|^3;|^multiiotester"|cut -d";" -f$tests->{$t}->{$version}`;
+
+  my @results = split(/;/,combinejobs($output));
+  my @iops = map { toiops($_,$tests->{$t}->{block}) } @results;
+  @results = map { convert($_) } @results;
+
+  if( $t =~ /^rand/ ) {
+    print "\tresult is $colors->{green}" . join("/", @results) . "$colors->{def} per second\n";
+    print "\tequals $colors->{green}" . join("$colors->{def}/$colors->{green}", @iops) . "$colors->{def} IOs per second\n\n";
+  }
+  else {
+    print "\tresult is $colors->{green}" . join("$colors->{def}/$colors->{green}", @results) . "$colors->{def} per second\n\n";
+  } 
+  
+}
+
+print "cleaning up files..\n";
+
+unlink glob "multiiotester*";
+chdir("..");
+rmdir("multiiotester") or print "unable to delete directory 'multiiotester'\n";
+
+###########################
+####### subroutines #######
+###########################
+
+sub convert {
+  my $val = shift;
+  my @units = ('KB','MB','GB');
+  my $i = 0;
+
+  $val =~ /^\d+/;
+  while (length($&) > 3 ) {
+    $val = sprintf("%.2f",$val / 1024);
+    $i++;
+    $val =~ /^\d+/;
+  }
+  return $val . $units[$i];
+}
+
+sub toiops {
+  my $val = shift;
+  my $blocksize = shift;
+
+  $blocksize =~ s/k//;
+  my $io = sprintf("%.1f",$val/$blocksize);
+ 
+  return $io;
+}
+
+sub combinejobs {
+  my $input = shift;
+  
+  my @lines = split(/\n/,$input);
+  my @output = ();
+
+  foreach my $l (0..$#lines) {
+    my @temp = split(/;/,$lines[$l]);
+    foreach my $t (0..$#temp){
+      $output[$t] += $temp[$t];
+    }
+  }
+
+  return join(";",@output);
+}
