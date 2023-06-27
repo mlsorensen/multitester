@@ -28,16 +28,16 @@ threads that do various types of IO. This allows us to see what the consequences
 are of running in a multitasking environment. This test uses direct IO and 
 invalidates caches between tests, testing the disk, not the memory.
 
-$colors->{red}NOTE:$colors->{def} You need at least 3GB of free space in your current working directory.
+$colors->{red}NOTE:$colors->{def} You need at least 4GB of free space in your current working directory.
 
 The following tests currently consist of:
 
-  4 sequential readers
-  4 sequential writers
-  4 mixed seqential readers/writers (random choice per IO)
-  4 random readers
-  4 random writers
-  4 mixed random readers/writers (random choice per IO)
+  16 sequential readers
+  16 sequential writers
+  16 mixed seqential readers/writers (random choice per IO)
+  16 random readers
+  16 random writers
+  16 mixed random readers/writers (random choice per IO)
 
 Feel free to modify the script to meet your needs. Enjoy!
 
@@ -92,7 +92,7 @@ chdir('./multiiotester') or die "unable to chdir to test directory: $^E";
 foreach my $t ( sort{$tests->{$a}->{order} cmp $tests->{$b}->{order}} keys %{$tests} ) {
   print "$colors->{cyan} running IO \"$tests->{$t}->{name}\" test... $colors->{def}\n";
 
-  my $output = `fio --direct=1 --invalidate=1 --iodepth=8 --thread --time_based --runtime=10 --rw=$t --bs=$tests->{$t}->{block} --size=256M --numjobs=8 --name=multiiotester --minimal | egrep "^2;|^3;|^multiiotester"|cut -d";" -f$tests->{$t}->{$version}`;
+  my $output = `fio --direct=1 --invalidate=1 --iodepth=32 --thread --time_based --runtime=10 --rw=$t --bs=$tests->{$t}->{block} --size=256M --numjobs=16 --name=multiiotester --minimal | egrep "^2;|^3;|^multiiotester"|cut -d";" -f$tests->{$t}->{$version}`;
 
   my @results = split(/;/,combinejobs($output));
   my @iops = map { toiops($_,$tests->{$t}->{block}) } @results;

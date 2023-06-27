@@ -12,16 +12,16 @@ threads that do various types of IO. This allows us to see what the consequences
 are of running in a multitasking environment. This test uses direct IO and
 invalidates caches between tests, testing the disk, not the memory.
 
-NOTE: You need at least 3GB of free space in your current working directory.
+NOTE: You need at least 4GB of free space in your current working directory.
 
 The following tests currently consist of:
 
-  4 sequential readers
-  4 sequential writers
-  4 mixed seqential readers/writers (random choice per IO)
-  4 random readers
-  4 random writers
-  4 mixed random readers/writers (random choice per IO)
+  16 sequential readers
+  16 sequential writers
+  16 mixed seqential readers/writers (random choice per IO)
+  16 random readers
+  16 random writers
+  16 mixed random readers/writers (random choice per IO)
 
 Feel free to modify the script to meet your needs. Enjoy!
 
